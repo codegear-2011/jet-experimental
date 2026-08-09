@@ -1,0 +1,2 @@
+[console_scripts]
+jet = jet.cli:main

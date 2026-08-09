@@ -1,0 +1,19 @@
+[project]
+name = "jet-framework"
+version = "0.1.0"
+description = "Jet — a lightweight, Python-first web framework."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Code Gear" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+jet = "jet.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["jet*"]

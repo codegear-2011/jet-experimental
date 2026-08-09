@@ -1,0 +1,16 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "jet-core"
+version = "0.4.0"
+description = "Jet's Rust-accelerated core: xitca-web/Tokio async server, router, and JSON encoding, built with PyO3 0.29.0. Robyn-style multi-process model -- works on any standard Python 3.8+, no free-threaded build required."
+requires-python = ">=3.8"
+
+[tool.maturin]
+module-name = "jet_core"
+features = ["pyo3/extension-module"]
+# abi3-py38 (set in Cargo.toml) means one compiled wheel works
+# unmodified across CPython 3.8 through 3.14+ -- build once per OS/
+# architecture, not once per Python version.
