@@ -1,4 +1,4 @@
-name: Build & publish jet-core wheels
+name: Build jet-core wheels
 
 # This is what makes `pip install jet-framework[speed]` activate the
 # Rust core INSTANTLY, with no compilation on the end user's machine:
