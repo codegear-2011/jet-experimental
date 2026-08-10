@@ -1,0 +1,55 @@
+[package]
+name = "jet_core"
+version = "0.6.0"
+edition = "2021"
+description = "Jet's own performance core: a hand-written, std-only HTTP/1.1 server, router, and JSON serialization, written in Rust and exposed to Python via PyO3 -- Robyn-style multi-process workers, with no third-party HTTP framework dependency at all."
+license = "MIT"
+
+# Builds as a Python extension module (jet_core.so / .pyd)
+[lib]
+name = "jet_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Python bindings. Pinned to an EXACT version (not a loose range) on
+# purpose: newer PyO3 releases have renamed/relocated several methods
+# used below (e.g. constructor and downcast APIs). A loose version
+# requirement let cargo resolve a release whose API this code wasn't
+# written against, which is exactly what broke an earlier build
+# attempt. Pinning avoids that regardless of what's newest on
+# crates.io when you build this.
+#
+# `abi3-py38` builds one wheel that works unmodified against any
+# CPython 3.8 and newer -- no free-threaded build, no per-version
+# rebuild required. This mirrors how Robyn ships: it targets ordinary
+# GIL-enabled Python, not a special interpreter.
+pyo3 = { version = "=0.22.6", features = ["extension-module", "abi3-py38"] }
+
+# Lets each worker *process* bind the same port (SO_REUSEPORT) so the
+# kernel load-balances connections across processes. This is the
+# primary way multi-core parallelism is achieved on ordinary
+# (GIL-enabled) Python -- one interpreter and one GIL per process,
+# many processes running at once. This is the same strategy Robyn,
+# Gunicorn, and uvicorn's multi-worker mode use. (socket2 is a thin,
+# well-documented wrapper around raw OS socket options -- not an HTTP
+# framework, so there's no routing/builder API to get wrong here.)
+socket2 = { version = "0.5", features = ["all"] }
+
+# Rust-side JSON encoding for Response.json(), avoiding Python's json
+# module on the hot path.
+serde_json = "1"
+
+# NOTE: deliberately no HTTP framework/server crate (no tiny_http, no
+# xitca-web, no hyper, no actix-web). The HTTP/1.1 request line,
+# headers, and Content-Length body parsing, plus response writing, are
+# hand-written in src/lib.rs directly against std::net/std::io. This
+# is Jet's own minimal HTTP engine, not a wrapped third-party one --
+# see the comment block at the top of the "Server" section in
+# src/lib.rs for the reasoning and the explicit scope limits (no
+# keep-alive, no chunked encoding, no HTTP/2, no TLS).
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "unwind"
