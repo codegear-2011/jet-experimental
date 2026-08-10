@@ -4,3 +4,5 @@ __pycache__/
 target/
 *.whl
 .pyenv-version
+build/
+*.egg-info/
