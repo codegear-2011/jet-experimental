@@ -15,34 +15,45 @@ name: Build jet-core wheels
 # it (a dependency API mismatch), not a problem with the Docker step
 # itself -- once rust/Cargo.toml and rust/src/lib.rs compile cleanly,
 # this step succeeds normally.
+#
+# The `linux-musl-aarch64` entry below targets 64-bit ARM devices
+# running a musl-based distro (e.g. Alpine Linux on a phone) --
+# confirmed via `python -m pip debug --verbose`, which reported
+# `musllinux_*_armv8l`/`aarch64` compatible tags on the target device.
+# `ubuntu-latest` itself is x86_64; maturin-action cross-compiles to
+# aarch64-musl inside a Docker container for that entry, so it will
+# take noticeably longer than the plain x86_64 build.
 
 on:
   push:
     tags:
       - "jet-core-v*"
   workflow_dispatch: {}
-  
+
 jobs:
   build-wheels:
-    name: Build wheel (${{ matrix.os }}, ${{ matrix.target }})
+    name: Build wheel (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: linux-glibc
+          - name: linux-x86_64-glibc
             runner: ubuntu-latest
             target: x86_64
             manylinux: auto
-          - os: linux-musl
+
+          - name: linux-aarch64-musl
             runner: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+            target: aarch64-unknown-linux-musl
             manylinux: musllinux_1_2
-          - os: macos
+
+          - name: macos-universal2
             runner: macos-latest
             target: universal2-apple-darwin
             manylinux: "off"
-          - os: windows
+
+          - name: windows-x86_64
             runner: windows-latest
             target: ""
             manylinux: "off"
@@ -61,12 +72,15 @@ jobs:
           working-directory: rust
           target: ${{ matrix.target }}
           args: --release --out dist
+          # abi3-py38 (set in rust/Cargo.toml) means ONE wheel per
+          # OS/architecture covers every Python 3.8+ -- no per-version
+          # build matrix needed.
           manylinux: ${{ matrix.manylinux }}
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          name: wheels-${{ matrix.name }}
           path: rust/dist/*.whl
 
   publish:
